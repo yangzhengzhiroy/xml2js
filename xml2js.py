@@ -42,8 +42,12 @@ def xml_text(element, strip_cdata=False, compact=False, remove_blank_text=True):
         if compact:
             if not output['_cdata']:
                 output.pop('_cdata')
+            elif len(output['_cdata']) == 1:
+                output.update(_cdata=output['_cdata'][0])
             if not output['_text']:
                 output.pop('_text')
+            elif len(output['_text']) == 1:
+                output.update(_text=output['_text'][0])
         output = output if iter_count else None
         return output
     except Exception as e:
@@ -131,7 +135,14 @@ def parseelement(element, strip_cdata=False, header=True, compact=False, remove_
             if text_output:
                 output[tag].update(text_output)
             for child in element.iterchildren():
-                output[tag].update(parseelement(child, strip_cdata, False, compact))
+                update_info = parseelement(child, strip_cdata, False, compact)
+                key = list(update_info.keys())[0]
+                if key in output[tag]:
+                    if not isinstance(output[tag][key], list):
+                        output[tag][key] = [output[tag][key]]
+                    output[tag][key].append(update_info[key])
+                else:
+                    output[tag].update(update_info)
         else:
             if header:
                 output.update(declaration=OrderedDict(attributes=OrderedDict(version='1.0', encoding='ISO-8859-1')))
